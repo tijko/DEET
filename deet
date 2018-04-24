@@ -4,24 +4,11 @@
 rebuild_pkg()
 {
     filepath=$1
-    pkg=$filepath
-
-    while ( true ) 
-    do
-        if [[ ! $pkg =~ /.+ ]]
-        then
-            break;
-        fi
-
-        pkg=${BASH_REMATCH[0]}
-        pkg=${pkg:1}
-
-    done
 
     cd $build_dir
 
-    echo "Downloading PKGBUILD for <$pkg>"
-    $(python ../get_pkgbuild_files.py $pkg 2&>>error.log)
+    echo "Downloading PKGBUILD for <$base>"
+    $(python ../get_pkgbuild_files.py $base 2&>>error.log)
     sleep 1 
 
     $(makepkg -is --noconfirm 2&>>error.log)
@@ -36,19 +23,7 @@ rebuild_pkg()
 create_debug_file()
 {
     exepath=$1
-    debugfile=$exepath
-
-    while ( true ) 
-    do
-        if [[ ! $debugfile =~ /.+ ]]
-        then
-            break;
-        fi
-
-        debugfile=${BASH_REMATCH[0]}
-        debugfile=${debugfile:1}
-
-    done
+    debugfile=$(echo $exepath | rev | cut -d '/' -f 1 | rev)
 
     debugfile=$debugfile.debug
 
