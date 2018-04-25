@@ -11,7 +11,7 @@ def scrap_urls(pkg):
     base = 'https://git.archlinux.org/svntogit/packages.git/tree/{}/trunk'
     req = requests.get(base.format(pkg))
     if not req.ok:
-        print('Error requesting :: <{}'.format(pkg))
+        print('Error requesting :: <{}>'.format(pkg))
     soup = BeautifulSoup(req.text, "html.parser")
     a_tags = soup.findAll('a')
     hrefs = {a_tags[i]['href'] for i in range(len(a_tags))}

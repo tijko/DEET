@@ -9,10 +9,8 @@ rebuild_pkg()
     base=$(echo $filepath | rev | cut -d '/' -f 1 | rev)
     echo "Downloading PKGBUILD for <$base>"
     $(python ../get_pkgbuild_files.py $base 2&>>error.log)
-    sleep 1 
 
     $(makepkg -is --noconfirm 2&>>error.log)
-    sleep 1 
 
     $(sudo rm -r *)
     cd ..
@@ -28,16 +26,12 @@ create_debug_file()
     debugfile=$debugfile.debug
 
     echo "creating debug file for $exepath [$debugfile]"
-    sleep 1 
     $(objcopy --only-keep-debug $exepath $debugfile)
     echo "Stripping $exepath...."
-    sleep 1
     $(sudo strip --strip-all $exepath)
     echo "adding gnu-debuglink $debugfile"
     $(sudo objcopy --add-gnu-debuglink=$debugfile $exepath)
-    sleep 1
-    $(mv $debugfile $debug_dir) 
-    sleep 1
+    $(sudo mv $debugfile $debug_dir) 
 }
 
 parse_file()
@@ -125,11 +119,11 @@ then
     $(mkdir $build_dir)
 fi
 
-debug_dir="debug_dir"
+debug_dir="/usr/bin/.debug"
 
 if [[ ! -d $debug_dir ]]
 then
-    $(mkdir $debug_dir)
+    $(sudo mkdir $debug_dir)
 fi
 
 
@@ -148,3 +142,9 @@ do
         exit 1
     esac
 done
+
+if [[ -d $build_dir ]]
+then
+    $(rm -r $build_dir)
+fi
+
