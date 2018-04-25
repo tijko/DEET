@@ -81,18 +81,18 @@ check_pkg_file()
 {
 	pkg=$1
 	# add check on posix script files
-	if [[ -h /usr/bin/$pkg ]]
-	then
-		exepath=$(readlink /usr/bin/$pkg);
-		is_path_or_file $exepath;
-	elif [[ -x /usr/bin/$pkg ]]
-	then
-		parse_file "/usr/bin/$pkg";
+    if [[ -h /usr/bin/$pkg ]]
+    then
+        exepath=$(readlink /usr/bin/$pkg);
+        is_path_or_file $exepath;
+    elif [[ -x /usr/bin/$pkg ]]
+    then
+        parse_file "/usr/bin/$pkg";
     elif [[ ! -f /usr/bin/$pkg ]]
     then
         echo Invalid filename
         exit 1
-	fi
+    fi
 }
 
 pac_query()
