@@ -56,31 +56,31 @@ parse_file()
 is_path_or_file()
 {
 
-	link=$1
-	if [[ $link =~ "/" ]]
-	then
-		echo Following symlink...$link
-		check_pkg_path $link;
-	else
-		echo Following symlink.../usr/bin/$link
-		check_pkg_file $link;
-	fi
+    link=$1
+    if [[ $link =~ "/" ]]
+    then
+        echo Following symlink...$link
+        check_pkg_path $link;
+    else
+        echo Following symlink.../usr/bin/$link
+        check_pkg_file $link;
+    fi
 }
 
 check_pkg_path()
 {
-	pkg_path=$1
+    pkg_path=$1
 
-	if [[ -x $pkg_path ]]
-	then
-		parse_file $pkg_path;
-	fi
+    if [[ -x $pkg_path ]]
+    then
+        parse_file $pkg_path;
+    fi
 }
 
 check_pkg_file()
 {
-	pkg=$1
-	# add check on posix script files
+    pkg=$1
+    # add check on posix script files
     if [[ -h /usr/bin/$pkg ]]
     then
         exepath=$(readlink /usr/bin/$pkg);
@@ -97,19 +97,19 @@ check_pkg_file()
 
 pac_query()
 {
-	echo "[[ Initializing pacman package database query.... ]]";
+    echo "[[ Initializing pacman package database query.... ]]";
 
-	for pkg in $(pacman -Qnq)
-	do
-		if [[ -a /usr/bin/$pkg ]]
-		then
-			echo "[Package :: <$pkg>]";
-			echo "Checking pkg binary...";
-			check_pkg_file $pkg;
-		fi
-	done
+    for pkg in $(pacman -Qnq)
+    do
+        if [[ -a /usr/bin/$pkg ]]
+        then
+            echo "[Package :: <$pkg>]";
+            echo "Checking pkg binary...";
+            check_pkg_file $pkg;
+        fi
+    done
 
-	echo "[[ Query complete ]]";
+    echo "[[ Query complete ]]";
 }
 
 build_dir="build_dir"
