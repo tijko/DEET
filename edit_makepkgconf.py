@@ -15,6 +15,7 @@ def edit_makepkg_conf(makepkg_conf):
             for line in conf_fh.readlines():
                 if line.startswith('OPTIONS='):
                     line = line.replace('strip', '!strip')
+                    line = line.replace('!debug', 'debug')
                 tmp_fh.write(line)
     shutil.copyfile(makepkg_conf, 'makepkg.conf.backup')
     shutil.copyfile(makepkg_tmp, makepkg_conf)

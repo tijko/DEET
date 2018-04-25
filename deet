@@ -6,7 +6,7 @@ rebuild_pkg()
     filepath=$1
 
     cd $build_dir
-
+    base=$(echo $filepath | rev | cut -d '/' -f 1 | rev)
     echo "Downloading PKGBUILD for <$base>"
     $(python ../get_pkgbuild_files.py $base 2&>>error.log)
     sleep 1 
@@ -94,6 +94,10 @@ check_pkg_file()
 	elif [[ -x /usr/bin/$pkg ]]
 	then
 		parse_file "/usr/bin/$pkg";
+    elif [[ ! -f /usr/bin/$pkg ]]
+    then
+        echo Invalid filename
+        exit 1
 	fi
 }
 
@@ -129,11 +133,18 @@ then
 fi
 
 
-if [[ $# -eq 0 ]]
-then
-    pac_query
-else
-    pkg=$1
-    check_pkg_file $pkg
-fi
+while getopts "ap:" opts
+do
+    case $opts in
 
+    a)
+        pac_query
+        ;;
+    p)
+        check_pkg_file $OPTARG
+        ;;
+    ?)
+        echo Invalid Option
+        exit 1
+    esac
+done
