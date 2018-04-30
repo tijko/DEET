@@ -7,10 +7,22 @@ rebuild_pkg()
 
     cd $build_dir
     base=$(echo $filepath | rev | cut -d '/' -f 1 | rev)
-    echo "Downloading PKGBUILD for <$base>"
-    $(python ../get_pkgbuild_files.py $base 2&>>error.log)
 
-    $(makepkg -is --noconfirm 2&>>error.log)
+    echo "Downloading PKGBUILD for <$base>"
+
+    $(python ../get_pkgbuild_files.py $base 2&>>../deet.log)
+    if [[ $? -ne 0 ]]
+    then
+        echo Python get_pkgbuild_files.py failed! Check deet.log
+        exit 1;
+    fi
+
+    $(makepkg -is --noconfirm 2&>>../deet.log)
+    if [[ $? -ne 0 ]]
+    then
+        echo Makepkg failed! Check deet.log
+        exit 1;
+    fi
 
     $(sudo rm -r *)
     cd ..
@@ -31,7 +43,7 @@ create_debug_file()
     $(sudo strip --strip-all $exepath)
     echo "adding gnu-debuglink $debugfile"
     $(sudo objcopy --add-gnu-debuglink=$debugfile $exepath)
-    $(sudo mv $debugfile $debug_dir) 
+    $(gzip $debugfile && sudo mv $debugfile.gz $debug_db)
 }
 
 parse_file()
@@ -80,6 +92,12 @@ check_pkg_path()
 check_pkg_file()
 {
     pkg=$1
+
+    if [[ ! -d $build_dir ]]
+    then
+        $(mkdir $build_dir)
+    fi
+
     # add check on posix script files
     if [[ -h /usr/bin/$pkg ]]
     then
@@ -112,27 +130,53 @@ pac_query()
     echo "[[ Query complete ]]";
 }
 
-build_dir="build_dir"
+deploy_debug()
+{
+    pkg=$1
 
-if [[ ! -d $build_dir ]]
-then
-    $(mkdir $build_dir)
-fi
+    if [[ ! -d $debug_dir ]]
+    then
+        $(sudo mkdir $debug_dir)
+    fi
+
+    for debug in $(ls $debug_db)
+    do
+        if [[ $debug =~ $pkg ]]
+        then
+            echo Decompressing $debug
+            $(sudo gunzip $debug_db/$debug)
+            echo Making $pkg.debug available in $debug_dir
+            $(sudo cp $debug_db/$pkg.debug $debug_dir)
+            $(sudo gzip $debug_db/$pkg.debug)
+            echo $pkg symbols now available
+        fi
+
+        exit 0
+    done
+
+    echo $pkg no debug file found!
+}
+
+build_dir="build_dir"
 
 debug_dir="/usr/bin/.debug"
 
-if [[ ! -d $debug_dir ]]
+debug_db="/var/lib/DEET"
+
+if [[ ! -d $debug_db ]]
 then
-    $(sudo mkdir $debug_dir)
+    $(sudo mkdir $debug_db)
 fi
 
-
-while getopts "ap:" opts
+while getopts "ad:p:" opts
 do
     case $opts in
 
     a)
         pac_query
+        ;;
+    d)
+        deploy_debug $OPTARG
         ;;
     p)
         check_pkg_file $OPTARG
