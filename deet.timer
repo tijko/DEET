@@ -1,0 +1,7 @@
+[Unit]
+name='Sets the interval to run deet pacman parser'
+
+[Timer]
+OnActiveUnitSec=1hr
+OnBootSec=5min
+

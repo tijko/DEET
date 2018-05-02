@@ -1,0 +1,8 @@
+[Unit]
+Description=Periodically checks if symbol database needs updating
+ConditionPathExists=/var/lib/DEET/
+
+[Service]
+Type=simple
+ExecStart=deet-updatedb
+

@@ -1,0 +1,58 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+from time import mktime, strptime
+from subprocess import Popen, PIPE
+
+
+def pacman_generator():
+    pacman_log = '/var/log/pacman.log'
+    with open(pacman_log, encoding='utf-8') as fh:
+        while True:
+            line = fh.readline()
+            if not line:
+                raise StopIteration
+            yield line
+
+def get_pkg_timestamp(log):
+    fmt = '%Y-%m-%d %H:%M'
+    if 'installed' not in log and 'upgraded' not in log:
+        return {} 
+    timestamp_delim = log.find(']')
+    if timestamp_delim < 1: return {}
+    timestamp_str = log[1:timestamp_delim]
+    log = log[timestamp_delim + 1:].split()
+    if 'installed' not in log[1] and 'upgraded' not in log[1]:
+        return {}
+    pkg = log[2]
+    timestamp = int(mktime(strptime(timestamp_str, fmt)))
+    return {pkg:timestamp}
+
+def parse_pacman_log():
+    paclog = pacman_generator()
+    pacman_dict = dict()
+    while True:
+        try:
+            log_line = next(paclog)
+            pacman_dict.update(get_pkg_timestamp(log_line))
+        except StopIteration:
+            break
+    return pacman_dict
+
+def parse_deet_db():
+    db_path = '/var/lib/DEET/'
+    debug_dict = dict()
+    for debug in os.listdir(db_path):
+        with open('{}/{}/timestamp'.format(db_path, debug)) as fh:
+            timestamp = int(fh.readline())
+        debug_dict[debug] = timestamp
+    return debug_dict
+
+
+if __name__ == '__main__':
+    pacman_dict = parse_pacman_log()
+    deet_dict = parse_deet_db()
+    for pkg in deet_dict:
+        if pkg in pacman_dict and deet_dict[pkg] > pacman_dict[pkg]:
+            proc = Popen(['deet', '-p', pkg], stdout=PIPE, shell=False)
+            proc.wait()
