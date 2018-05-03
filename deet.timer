@@ -1,7 +1,10 @@
 [Unit]
-name='Sets the interval to run deet pacman parser'
+Description='Sets the interval to run deet pacman parser'
 
 [Timer]
-OnActiveUnitSec=1hr
+OnUnitActiveSec=1hr
 OnBootSec=5min
+
+[Install]
+WantedBy=multi-user.target
 

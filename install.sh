@@ -5,15 +5,23 @@ do
     if [[ $exe =~ deet($|[^\.]) ]]
     then
         $(chmod 0777 $exe)
-        $(mv $exe /usr/bin)
+        $(cp $exe /usr/bin)
     fi
 done
 
-$(deet-makepkg)
 
-$(cp deet.service /usr/lib/systemd/user/)
-$(cp deet.timer /usr/lib/systemd/user/)
+$(cp deet.service /usr/lib/systemd/system/)
+$(cp deet.timer /usr/lib/systemd/system/)
 
-$(systemctl start deet.timer)
-$(systemctl enable deet.timer)
 $(systemctl daemon-reload)
+$(systemctl enable deet.timer)
+$(systemctl start deet.timer)
+
+
+if [[ $? -ne 0 ]]
+then
+    echo Error deploying deet service!
+    exit 1
+fi
+
+$(deet-makepkg)

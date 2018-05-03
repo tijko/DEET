@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
 from time import mktime, strptime
 from subprocess import Popen, PIPE
 
@@ -40,7 +41,7 @@ def parse_pacman_log():
     return pacman_dict
 
 def parse_deet_db():
-    db_path = '/var/lib/DEET/'
+    db_path = '/var/lib/DEET'
     debug_dict = dict()
     for debug in os.listdir(db_path):
         with open('{}/{}/timestamp'.format(db_path, debug)) as fh:
@@ -53,6 +54,6 @@ if __name__ == '__main__':
     pacman_dict = parse_pacman_log()
     deet_dict = parse_deet_db()
     for pkg in deet_dict:
-        if pkg in pacman_dict and deet_dict[pkg] > pacman_dict[pkg]:
+        if pkg in pacman_dict and deet_dict[pkg] < pacman_dict[pkg]:
             proc = Popen(['deet', '-p', pkg], stdout=PIPE, shell=False)
             proc.wait()

@@ -10,22 +10,24 @@ rebuild_pkg()
 
     echo "Downloading PKGBUILD for <$base>"
 
-    $(deet-pkgbuild $base 2&>>$deet_log)
+    $(sudo deet-pkgbuild $base 2&>error.log)
     if [[ $? -ne 0 ]]
     then
-        echo Python get_pkgbuild_files.py failed! Check deet.log
+        $(sudo cp error.log /var/log/deet.log)
+        echo Python deet-pkgbuild failed! Check deet.log
         exit 1;
     fi
 
-    $(makepkg -is --noconfirm 2&>>deet_log)
+    $(makepkg -is --noconfirm 2&>error.log)
     if [[ $? -ne 0 ]]
     then
+        $(sudo cp error.log /var/log/deet.log)
         echo Makepkg failed! Check deet.log
         exit 1;
     fi
 
-    $(rm -r *)
-    cd ..
+    $(sudo rm -r *)
+    cd .. 
 
     create_debug_file $filepath
 }
@@ -38,20 +40,24 @@ create_debug_file()
     debugfile=$base.debug
 
     echo "creating debug file for $exepath [$debugfile]"
-    $(objcopy --only-keep-debug $exepath $debugfile)
+    $(sudo objcopy --only-keep-debug $exepath $debugfile)
     echo "Stripping $exepath...."
-    $(strip --strip-all $exepath)
+    $(sudo strip --strip-all $exepath)
     echo "adding gnu-debuglink $debugfile"
-    $(objcopy --add-gnu-debuglink=$debugfile $exepath)
-    $(gzip $debugfile)
+    $(sudo objcopy --add-gnu-debuglink=$debugfile $exepath)
+    $(sudo gzip $debugfile)
 
-    if [[ -d $deet_db/$base ]]
+    pkg_dir="$deet_db/$base"
+    if [[ ! -d $pkg_dir ]]
     then
-        $(mkdir $deet_db/$base)
+        echo Adding to database $pkg_dir
+        $(sudo mkdir $pkg_dir)
     fi
 
-    $(mv $debugfile.gz $deet_db/$base)
-    $(date +%s > $deet_db/timestamp)
+    debug_zip="$debugfile.gz"
+    $(sudo mv $debug_zip $pkg_dir)
+    $(date +%s > timestamp)
+    $(sudo cp timestamp $pkg_dir)
 }
 
 parse_file()
@@ -103,7 +109,7 @@ check_pkg_file()
 
     if [[ ! -d $build_dir ]]
     then
-        $(mkdir $build_dir)
+        $(mkdir -p $build_dir)
     fi
 
     # add check on posix script files
@@ -141,28 +147,26 @@ pac_query()
 deploy_debug()
 {
     pkg=$1
+    pkg_db="$deet_db/$pkg"
+
+    if [[ ! -d $pkg_db ]]
+    then
+        echo "There are no debug symbols for package [$pkg] in database"
+        exit 0
+    fi
 
     if [[ ! -d $debug_dir ]]
     then
-        $(mkdir $debug_dir)
+        $(sudo mkdir $debug_dir)
     fi
 
-    for debug in $(ls $deet_db)
-    do
-        if [[ $debug =~ $pkg ]]
-        then
-            echo Decompressing $debug
-            $(gunzip $deet_db/$debug)
-            echo Making $pkg.debug available in $debug_dir
-            $(cp $deet_db/$pkg.debug $debug_dir)
-            $(gzip $deet_db/$pkg.debug)
-            echo $pkg symbols now available
-        fi
-
-        exit 0
-    done
-
-    echo $pkg no debug file found!
+    cd $pkg_db
+    echo Decompressing $pkg.debug.gz
+    $(sudo gunzip "$pkg.debug.gz")
+    echo Making $pkg.debug available in $debug_dir
+    $(sudo cp "$pkg.debug" $debug_dir)
+    $(sudo gzip "$pkg.debug")
+    echo $pkg symbols now available
 }
 
 build_dir="/tmp/DEET/build_dir"
@@ -173,7 +177,7 @@ deet_log="/var/log/deet.log"
 
 if [[ ! -d $deet_db ]]
 then
-    $(mkdir $deet_db)
+    $(sudo mkdir $deet_db)
 fi
 
 while getopts "ad:p:" opts
@@ -197,6 +201,6 @@ done
 
 if [[ -d $build_dir ]]
 then
-    $(rm -r $build_dir)
+    $(sudo rm -r $build_dir)
 fi
 

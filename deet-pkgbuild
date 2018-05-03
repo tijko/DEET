@@ -7,7 +7,7 @@ import requests
 import sys
 
 
-def scrap_urls(pkg):
+def scrape_urls(pkg):
     base = 'https://git.archlinux.org/svntogit/packages.git/tree/{}/trunk'
     req = requests.get(base.format(pkg))
     if not req.ok:
@@ -20,7 +20,7 @@ def scrap_urls(pkg):
     for url in hrefs:
         req = requests.get(base.format(url.replace('tree', 'plain')))
         filename = url.split('/')[-1]
-        with open(filename, 'w+') as fh:
+        with open(filename, 'w+', encoding='utf-8') as fh:
             fh.write(req.text)
 
 if __name__ == '__main__':
@@ -28,4 +28,4 @@ if __name__ == '__main__':
         print('Pass a package-name')
         sys.exit(0)
     pkg = sys.argv[1]
-    pkg_urls = scrap_urls(pkg)
+    pkg_urls = scrape_urls(pkg)
