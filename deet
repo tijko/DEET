@@ -7,7 +7,7 @@ rebuild_pkg()
 
     cd $build_dir
     base=$(echo $filepath | awk -F "/" 'split($0, A){print A[NF]}')
-
+    base=$(echo $base | cut -d "." -f 1)
     echo "Downloading PKGBUILD for <$base>"
 
     $(sudo deet-pkgbuild $base 2&>error.log)
@@ -62,9 +62,10 @@ create_debug_file()
 
 parse_file()
 {
-    filepath=$1
+    pkg=$1
 
-    file_output=$(file $filepath)
+    filepath=$(whereis $pkg | cut -d " " -f 2)
+    file_output=$(file -L $filepath)
 
     if [[ $file_output =~ "with debug" ]]
     then
@@ -79,52 +80,24 @@ parse_file()
     fi
 }
 
-is_path_or_file()
-{
-
-    link=$1
-    if [[ $link =~ "/" ]]
-    then
-        echo Following symlink...$link
-        check_pkg_path $link;
-    else
-        echo Following symlink.../usr/bin/$link
-        check_pkg_file $link;
-    fi
-}
-
-check_pkg_path()
-{
-    pkg_path=$1
-
-    if [[ -x $pkg_path ]]
-    then
-        parse_file $pkg_path;
-    fi
-}
-
-check_pkg_file()
+check_pkg()
 {
     pkg=$1
+
+    chk_db=$(pacman -Q $pkg 2>/dev/null)
+
+    if [[ $? -eq 1 ]]
+    then 
+        echo Invalid Package
+        exit 1
+    fi
 
     if [[ ! -d $build_dir ]]
     then
         $(mkdir -p $build_dir)
     fi
 
-    # add check on posix script files
-    if [[ -h /usr/bin/$pkg ]]
-    then
-        exepath=$(readlink /usr/bin/$pkg);
-        is_path_or_file $exepath;
-    elif [[ -x /usr/bin/$pkg ]]
-    then
-        parse_file "/usr/bin/$pkg";
-    elif [[ ! -f /usr/bin/$pkg ]]
-    then
-        echo Invalid filename
-        exit 1
-    fi
+    parse_file $pkg
 }
 
 pac_query()
@@ -137,7 +110,7 @@ pac_query()
         then
             echo "[Package :: <$pkg>]";
             echo "Checking pkg binary...";
-            check_pkg_file $pkg;
+            parse_file $pkg
         fi
     done
 
@@ -218,7 +191,7 @@ do
         deploy_debug $OPTARG
         ;;
     p)
-        check_pkg_file $OPTARG
+        check_pkg $OPTARG
         ;;
     ?)
         echo Invalid Option

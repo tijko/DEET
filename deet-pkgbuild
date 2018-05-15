@@ -8,10 +8,15 @@ import sys
 
 
 def scrape_urls(pkg):
-    base = 'https://git.archlinux.org/svntogit/packages.git/tree/{}/trunk'
-    req = requests.get(base.format(pkg))
-    if not req.ok:
+    repos = ('packages', 'community')
+    base = 'https://git.archlinux.org/svntogit/{}.git/tree/{}/trunk'
+    for repo in repos:
+        req = requests.get(base.format(repo, pkg))
+        if req.ok:
+            break
+    else:
         print('Error requesting :: <{}>'.format(pkg))
+        sys.exit(0)
     soup = BeautifulSoup(req.text, "html.parser")
     a_tags = soup.findAll('a')
     hrefs = {a_tags[i]['href'] for i in range(len(a_tags))}
