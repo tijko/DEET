@@ -25,3 +25,4 @@ then
 fi
 
 $(deet-makepkg)
+$(rm makepkg*)

@@ -3,14 +3,14 @@
 
 rebuild_pkg()
 {
-    filepath=$1
+    filepath="$1"
 
-    cd $build_dir
-    base=$(echo $filepath | awk -F "/" 'split($0, A){print A[NF]}')
-    base=$(echo $base | cut -d "." -f 1)
+    cd "$build_dir"
+    base="$(echo "$filepath" | awk -F "/" 'split($0, A){print A[NF]}')"
+    base="$(echo "$base" | cut -d "." -f 1)"
     echo "Downloading PKGBUILD for <$base>"
 
-    $(sudo deet-pkgbuild $base 2&>error.log)
+    $(sudo deet-pkgbuild "$base" 2&>error.log)
     if [[ $? -ne 0 ]]
     then
         $(sudo cp error.log /var/log/deet.log)
@@ -29,52 +29,52 @@ rebuild_pkg()
     $(sudo rm -r *)
     cd .. 
 
-    create_debug_file $filepath
+    create_debug_file "$filepath"
 }
 
 create_debug_file()
 {
-    exepath=$1
-    base=$(echo $exepath | awk -F "/" 'split($0, A){print A[NF]}')
+    exepath="$1"
+    base="$(echo "$exepath" | awk -F "/" 'split($0, A){print A[NF]}')"
 
-    debugfile=$base.debug
+    debugfile="$base".debug
 
     echo "creating debug file for $exepath [$debugfile]"
-    $(sudo objcopy --only-keep-debug $exepath $debugfile)
+    "$(sudo objcopy --only-keep-debug "$exepath" "$debugfile")"
     echo "Stripping $exepath...."
-    $(sudo strip --strip-all $exepath)
+    $(sudo strip --strip-all "$exepath")
     echo "adding gnu-debuglink $debugfile"
-    $(sudo objcopy --add-gnu-debuglink=$debugfile $exepath)
-    $(sudo gzip $debugfile)
+    $(sudo objcopy --add-gnu-debuglink="$debugfile" "$exepath")
+    $(sudo gzip "$debugfile")
 
     pkg_dir="$deet_db/$base"
-    if [[ ! -d $pkg_dir ]]
+    if [[ ! -d "$pkg_dir" ]]
     then
-        echo Adding to database $pkg_dir
-        $(sudo mkdir $pkg_dir)
+        echo Adding to database "$pkg_dir"
+        $(sudo mkdir "$pkg_dir")
     fi
 
     debug_zip="$debugfile.gz"
-    $(sudo mv $debug_zip $pkg_dir)
+    $(sudo mv "$debug_zip" "$pkg_dir")
     $(date +%s > timestamp)
-    $(sudo cp timestamp $pkg_dir)
+    $(sudo cp timestamp "$pkg_dir")
 }
 
 parse_file()
 {
-    pkg=$1
+    pkg="$1"
 
-    filepath=$(whereis $pkg | cut -d " " -f 2)
-    file_output=$(file -L $filepath)
+    filepath="$(whereis "$pkg" | cut -d " " -f 2)"
+    file_output="$(file -L "$filepath")"
 
-    if [[ $file_output =~ "with debug" ]]
+    if [[ "$file_output" =~ "with debug" ]]
     then
         echo "<$filepath>....is *not* stripped"
-        create_debug_file $filepath
-    elif [[ $file_output =~ "stripped" ]]
+        create_debug_file "$filepath"
+    elif [[ "$file_output" =~ "stripped" ]]
     then
         echo "<$filepath>....is stripped"
-        rebuild_pkg $filepath
+        rebuild_pkg "$filepath"
     else
         echo "<$filepath>....is not a binary"
     fi
@@ -82,9 +82,9 @@ parse_file()
 
 check_pkg()
 {
-    pkg=$1
+    pkg="$1"
 
-    chk_db=$(pacman -Q $pkg 2>/dev/null)
+    chk_db="$(pacman -Q "$pkg" 2>/dev/null)"
 
     if [[ $? -eq 1 ]]
     then 
@@ -92,25 +92,25 @@ check_pkg()
         exit 1
     fi
 
-    if [[ ! -d $build_dir ]]
+    if [[ ! -d "$build_dir" ]]
     then
-        $(mkdir -p $build_dir)
+        $(mkdir -p "$build_dir")
     fi
 
-    parse_file $pkg
+    parse_file "$pkg"
 }
 
 pac_query()
 {
     echo "[[ Initializing pacman package database query.... ]]";
 
-    for pkg in $(pacman -Qnq)
+    for pkg in "$(pacman -Qnq)"
     do
-        if [[ -a /usr/bin/$pkg ]]
+        if [[ -a /usr/bin/"$pkg" ]]
         then
             echo "[Package :: <$pkg>]";
             echo "Checking pkg binary...";
-            parse_file $pkg
+            parse_file "$pkg"
         fi
     done
 
@@ -119,27 +119,27 @@ pac_query()
 
 deploy_debug()
 {
-    pkg=$1
+    pkg="$1"
     pkg_db="$deet_db/$pkg"
 
-    if [[ ! -d $pkg_db ]]
+    if [[ ! -d "$pkg_db" ]]
     then
         echo "There are no debug symbols for package [$pkg] in database"
         exit 0
     fi
 
-    if [[ ! -d $debug_dir ]]
+    if [[ ! -d "$debug_dir" ]]
     then
-        $(sudo mkdir $debug_dir)
+        "$(sudo mkdir "$debug_dir")"
     fi
 
-    cd $pkg_db
-    echo Decompressing $pkg.debug.gz
-    $(sudo gunzip "$pkg.debug.gz")
-    echo Making $pkg.debug available in $debug_dir
-    $(sudo cp "$pkg.debug" $debug_dir)
-    $(sudo gzip "$pkg.debug")
-    echo $pkg symbols now available
+    cd "$pkg_db"
+    echo Decompressing "$pkg".debug.gz
+    "$(sudo gunzip "$pkg.debug.gz")"
+    echo Making "$pkg".debug available in "$debug_dir"
+    "$(sudo cp "$pkg.debug" "$debug_dir")"
+    "$(sudo gzip "$pkg.debug")"
+    echo "$pkg" symbols now available
 }
 
 usage()
@@ -169,9 +169,9 @@ debug_dir="/usr/bin/.debug"
 deet_db="/var/lib/DEET"
 deet_log="/var/log/deet.log"
 
-if [[ ! -d $deet_db ]]
+if [[ ! -d "$deet_db" ]]
 then
-    $(sudo mkdir $deet_db)
+    $(sudo mkdir "$deet_db")
 fi
 
 if [[ $# -eq 0 ]]
@@ -182,16 +182,16 @@ fi
 
 while getopts "ad:p:" opts
 do
-    case $opts in
+    case "$opts" in
 
     a)
         pac_query
         ;;
     d)
-        deploy_debug $OPTARG
+        deploy_debug "$OPTARG"
         ;;
     p)
-        check_pkg $OPTARG
+        check_pkg "$OPTARG"
         ;;
     ?)
         echo Invalid Option
@@ -200,8 +200,8 @@ do
     esac
 done
 
-if [[ -d $build_dir ]]
+if [[ -d "$build_dir" ]]
 then
-    $(sudo rm -r $build_dir)
+    $(sudo rm -r "$build_dir")
 fi
 
